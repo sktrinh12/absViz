@@ -11,7 +11,7 @@ import os
 
 dbname = 'ncifred'
 #connect_string = os.environ.get('MONGODB_KEY') for local
-connect_string = f"mongodb+srv://{os.environ['MONOGODB_KEY']}:{os.environ['MONOGODB_SECRET']}@ncifrederick-l7ves.mongodb.net/ncifred?retryWrites=true" #for heroku
+connect_string = f"mongodb+srv://{os.environ['MONGODB_KEY']}:{os.environ['MONGODB_SECRET']}@ncifrederick-l7ves.mongodb.net/ncifred?retryWrites=true" #for heroku
 lstOfwavelengths = list(range(220,810,10))
 manager = multiprocessing.Manager()
 lstOfPlots = manager.list()
