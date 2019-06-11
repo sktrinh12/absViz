@@ -1,5 +1,5 @@
 from flask import Flask, render_template, Markup, request, jsonify, session
-from graph import corrAbs, build_graph_mongo_multiproc, build_heatmap_mongo, wellIds, dbname, connect_string, lstOfwavelengths, MongoClient, chunks, lstOfPlots, os
+from graph import corrAbs, build_graph_mongo_multiproc, build_heatmap_mongo, wellIds, dbname, lstOfwavelengths, MongoClient, chunks, lstOfPlots, os, connect_string
 from bokeh.embed import components
 from functools import partial
 import multiprocessing
