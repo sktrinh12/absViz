@@ -1,49 +1,39 @@
-from flask import Flask, render_template, Markup, request, jsonify, session
-# from graph import corrAbs, build_graph_mongo_multiproc, build_heatmap_mongo, wellIds, dbname, lstOfwavelengths, MongoClient, chunks, lstOfPlots, os, connect_string
-from graph import corrAbs, build_graph_multiproc, build_heatmap, wellIds, lstOfwavelengths, chunks, lstOfPlots, os, cr, tableName
+from flask import render_template, Markup, request, jsonify, session
+from graph import corrAbs, build_graph_multiproc, build_heatmap, wellIds, lstOfwavelengths, chunks, lstOfPlots, os, cr, app
 from bokeh.embed import components
 from functools import partial
 import multiprocessing
 
-app = Flask(__name__)
-#app.secret_key = os.urandom(10)
-#app.config['MONGODB_KEY'] = os.environ.get('MONGODB_KEY')
-# client = MongoClient(connect_string)
-# db = client[dbname]
-# pltcodes=[fi for fi in db.list_collection_names()]
 
-pltcodes = [plt[0] for plt in cr.execute(f"SELECT DISTINCT PLATE_CODE || SUFFIX FROM {tableName}")]
+tableName_abs = 'WELL_ABSORBANCE'
+tableName_stats = 'ABSORBANCE_STATS'
+
+pltcodes = [plt[0] for plt in cr.execute(f"SELECT DISTINCT PLATE_CODE || PLATE_SUFFIX FROM {tableName_abs}")]
 pltcodes.sort()
-# unqPltCodes = list(set([plt[:len(plt)-3] for plt in pltcodes]))
-unqPltCodes = [plt[0] for plt in cr.execute(f"SELECT DISTINCT PLATE_CODE FROM {tableName}")]
+unqPltCodes = [plt[0] for plt in cr.execute(f"SELECT DISTINCT PLATE_CODE FROM {tableName_abs}")]
 unqPltCodes.sort()
 
-# def replaceSVGparams(svg_string):
-#     return svg_string.replace('width="51.84pt"','width="100%"').replace('height="51.84pt"','height="100%"')
+def lstOfwavelengthS(tableName,pltcode,suffix):
+    return [r[0] for r in cr.execute(f"SELECT DISTINCT WAVELENGTH FROM {tableName} WHERE PLATE_CODE = {pltcode} AND PLATE_SUFFIX = {suffix} ")]
 
 @app.route('/')
 def plotgraphs():
-     return render_template('graphs.html', wvls=lstOfwavelengths,pltcodes=pltcodes,unqPltCodes=unqPltCodes)
+     selected_pltcode = request.args.get('selected_pltcode').strip()
+     pltcode = selected_pltcode[:8]
+     suffix = selected_pltcode[8:11]
+     return render_template('graphs.html', wvls=lstOfwavelengthS(tableName_abs,pltcode,suffix),pltcodes=pltcodes,unqPltCodes=unqPltCodes)
 
 @app.route('/updateDf/')
 def updateDf():
-     #time2s = time.time()
      global lstOfPlots
      selected_pltcode = request.args.get('selected_pltcode').strip()
-     # func_partial = partial(build_graph_mongo_multiproc,pltcodeWithSuffix=selected_pltcode)
      func_partial = partial(build_graph_multiproc,pltcodeWithSuffix=selected_pltcode)
-     pool = multiprocessing.Pool(processes=4)
-     pool.map(func_partial,list(chunks(wellIds,100)) )
+     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+     pool.map(func_partial,list(chunks(wellIds,384)) )
      pool.close()
      pool.join()
-     #import pdb
-     #pdb.set_trace()
-     #extracted_vals = [val for val in lstOfPlots]
-     #sorted_plts = extracted_vals.sort(key=lambda tup: tup[0])
-     #sorted_vals = sorted(extracted_vals,key=lambda tup: tup[0])
      sorted_vals = sorted(lstOfPlots,key=lambda tup: tup[0])
      plts = [Markup(plt[1].decode('utf-8')) for plt in sorted_vals]
-     #print(time.time() - time2s)
      return jsonify(htmlLinePlt=render_template('updateDF.html',lstofplots=plts),pltcode=selected_pltcode)
 
 @app.route('/updateHeatmap/')

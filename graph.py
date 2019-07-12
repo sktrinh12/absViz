@@ -5,24 +5,42 @@ from bokeh.plotting import figure
 from bokeh.models import HoverTool
 import io
 import numpy as np
-# from pymongo import MongoClient
 import multiprocessing
 import os
-import sqlite3
+#import sqlite3
+import cx_Oracle
+from flask import Flask 
 
-conn = sqlite3.connect('/Users/spencertrinh/GitRepos/absViz/NCIFrederick/static/abs384QCdb.db')
-tableName = "QCabsVals"
+app = Flask(__name__)
+#connect_string = app.instance_path.replace('/instance','') + '/static/abs384QCdb.db'
+#print(connect_string)
+#connect_string = '/Users/trinhsk/Documents/GitRepos/absViz_offline/384QC_offline/static/abs384QCdb.db'
+#conn = sqlite3.connect(connect_string)
+#tableName = "QCabsVals"
+tableName_abs = 'WELL_ABSORBANCE'
+tableName_stats = 'ABSORBANCE_STATS'
+
+host = os.environ['ORACLE_HOST']
+port = os.environ['ORACLE_PORT']
+servname = os.environ['ORACLE_SERVNAME']
+passwrd = os.environ['ORACLE_PASS']
+user = os.environ['ORACLE_USER']
+
+dsn_tns = cx_Oracle.makedsn(host,port,service_name=servname)
+conn = cx_Oracle.connect(user,passwrd,dsn_tns)
 cr = conn.cursor()
-# dbname = 'ncifred'
-# connect_string = f"mongodb+srv://{os.environ['MONGODB_KEY']}:{os.environ['MONGODB_SECRET']}@ncifrederick-l7ves.mongodb.net/ncifred?retryWrites=true" 
+
 lstOfwavelengths = list(range(220,810,10))
 manager = multiprocessing.Manager()
 lstOfPlots = manager.list()
+emptyWells= {f"{chr(65+i)}01" if i < 16 else f"{chr(65+i%16)}02":0 for i in range(32)} #empty first two columns on plate
 
 wellIds=[]
 cnt=0
 for i in range(1,17):
     for j in range(1,25):
+        if j < 10:
+            j = '0'+ str(j)
         wellIds.append((cnt,f'{chr(64+i)}{j}'))
         cnt+=1
 
@@ -32,45 +50,30 @@ def chunks(l, n):
     for i in range(0, len(l), n):
         yield l[i:i + n]
 
-# def getWavelengthData_mg(db,pltcodeWithSuffix,wavelength):
-#     ''' Return dicitonary of wellids and their absorbance values '''
-#     res=db[pltcodeWithSuffix].find({"Wavelength":wavelength})
-#     return {k:v for k,v in res[0].items() if k not in ['_id','Wavelength','Temperature(¡C)']}
-
 def getWavelengthData(cr,tableName,pltcodeWithSuffix,wv):
     pltcode = pltcodeWithSuffix[:8]
     suffix = pltcodeWithSuffix[8:11]
     datadict = {}
-    for k,v in cr.execute(f'''SELECT WELLID,ABS FROM {tableName} WHERE PLATE_CODE = '{pltcode}' and WAVELENGTH = {wv} AND SUFFIX = '{suffix}' '''):
+    for k,v in cr.execute(f'''SELECT PLATE_POSITION,READING FROM {tableName} WHERE PLATE_CODE = '{pltcode}' and WAVELENGTH = {wv} AND PLATE_SUFFIX = '{suffix}' '''):
         datadict[k] = v
     return datadict
 
 def getAllWellVals(cr,tableName,pltcodeWithSuffix,wellID):
     pltcode = pltcodeWithSuffix[:8]
     suffix = pltcodeWithSuffix[8:11]
-    return [r for r in cr.execute(f'''SELECT ABS FROM '{tableName}' WHERE WELLID =
-            '{wellID}' and PLATE_CODE = '{pltcode}' AND SUFFIX = '{suffix}' ''')]
+    return [r[0] for r in cr.execute(f'''SELECT READING FROM {tableName} WHERE PLATE_POSITION =
+            '{wellID}' and PLATE_CODE = {pltcode} AND PLATE_SUFFIX = {suffix}''')]
 
-# def getAllWellVals_mg(db,pltcodeWithSuffix,wellID):
-#     lstOfVals = []
-#     for absnum in db[pltcodeWithSuffix].find({}, {wellID: 1 , '_id': 0}):
-#         lstOfVals.append(absnum[wellID ])
-#     return lstOfVals
 
-# def build_graph_mongo_multiproc(chunk,pltcode): 
 def build_graph_multiproc(chunk,pltcodeWithSuffix):
     global lstOfPlots
-    #client=MongoClient(connect_string,maxPoolSize=10000)
-    #db = client[dbname]
-    with sqlite3.connect('/Users/spencertrinh/GitRepos/absViz/NCIFrederick/static/abs384QCdb.db') as conn_:
-        cr_ = conn_.cursor()
-        #loop over the id's in the chunk and do the plotting with each
+    with cx_Oracle.connect(user,passwrd,dsn_tns) as conn:
+        cr = conn.cursor()
         for i, wid in chunk:
-            #do the plotting with document collection.find_one(id) MongoDB
             img = io.BytesIO()
             fig = Figure(figsize=(0.6,0.6))
             axis = fig.add_subplot(1,1,1)
-            absVals = getAllWellVals(cr_,tableName,pltcodeWithSuffix,wid)
+            absVals = getAllWellVals(cr,tableName_abs,pltcodeWithSuffix,wid)
             axis.plot(lstOfwavelengths,absVals)
             axis.set_title(f'{wid}',fontsize=9)
             axis.title.set_position([.5, .6])
@@ -87,20 +90,16 @@ def build_graph_multiproc(chunk,pltcodeWithSuffix):
             except IndexError:
                 lstOfPlots.append((i,result))
 
-# def build_heatmap_mongo(db,pltcode,wavelength):
 def build_heatmap(pltcodeWithSuffix,wavelength):
-    with sqlite3.connect('/Users/spencertrinh/GitRepos/absViz/NCIFrederick/static/abs384QCdb.db') as conn_:
-        cr_ = conn_.cursor()
-        datadict = getWavelengthData(cr_,tableName, pltcodeWithSuffix,int(wavelength))
-        # vals=[]
-        # for i in db[pltcodeWithSuffix].find({}):
-        #     for k,v in i.items():
-        #         if k not in ['_id','Wavelength','Temperature(¡C)']:
-        #             vals.append(v) 
-        # max_val = np.array(vals).max()
-        # min_val = abs(np.array(vals)).min()
+    #with sqlite3.connect(connect_string) as conn_:
+    with cx_Oracle.connect(user,passwrd,dsn_tns) as conn:
+        cr = conn.cursor()
+        datadict = getWavelengthData(cr,tableName_abs, pltcodeWithSuffix,int(wavelength))
         max_val = np.array([v for v in datadict.values()]).max()
         min_val = abs(np.array([v for v in datadict.values()])).min()
+        if int(pltcodeWithSuffix[2:4]) < 18: 
+            merge_dict = {**datadict,**emptyWells}
+            datadict = dict(sorted(merge_dict.items()))
         data_array = np.array(list(datadict.values())).reshape(16,24).T
         colourBlue = [ '#E3E6E8', '#E0E7EB', '#DEE8ED', '#DBE9F0', '#D9EAF2', '#D6EBF5', '#D4EBF7', '#D1ECFA', '#CFEDFC', '#CCEEFF', '#A8D8F0', '#A3DAF5', '#9EDBFA', '#99DDFF', '#7DC4E8', '#75C7F0', '#6EC9F7', '#66CCFF' ]
         nphist = np.linspace(min_val,max_val,num=len(colourBlue))
@@ -130,10 +129,11 @@ def build_heatmap(pltcodeWithSuffix,wavelength):
 
 
 def corrAbs(db,pltcodeWithSuffix1,pltcodeWithSuffix2,wavelength):
-    with sqlite3.connect('/Users/spencertrinh/GitRepos/absViz/NCIFrederick/static/abs384QCdb.db') as conn_:
-        cr_ = conn_.cursor()
-        crude = list(getWavelengthData(cr_,tableName,pltcodeWithSuffix1,wavelength).values())
-        fx = list(getWavelengthData(cr_,tableName,pltcodeWithSuffix2,wavelength).values())
+    #with sqlite3.connect(connect_string) as conn_:
+    with cx_Oracle.connect(user,passwrd,dsn_tns) as conn:
+        cr = conn.cursor()
+        crude = list(getWavelengthData(cr,tableName_abs,pltcodeWithSuffix1,wavelength).values())
+        fx = list(getWavelengthData(cr,tableName_abs,pltcodeWithSuffix2,wavelength).values())
         darray_crude = np.array(crude).reshape(16,24)
         darray_fx = np.array(fx).reshape(16,24)
         darray_t = np.flip(np.flip(darray_crude.T,axis=1),axis=0).reshape(16,24) #flip the 100 plate

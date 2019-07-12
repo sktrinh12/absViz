@@ -8,7 +8,7 @@
   <link href="{{ url_for('static', filename='bootstrap-3.4.1-dist/css/bootstrap.min.css') }}" rel="stylesheet" media="all">
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheet.css') }}">
   <script src=" {{ url_for('static', filename='jquery.min.js') }}"></script>
-  <script src=" {{ url_for('static', filename='bootstrap-4.3.1-dist/js/bootstrap.min.js') }}"></script>
+  <script src=" {{ url_for('static', filename='bootstrap-3.4.1-dist/js/bootstrap.min.js') }}"></script>
   <script src=" {{ url_for('static', filename='bokeh-1.2.0.min.js') }}"></script>
   <link href=" {{ url_for('static', filename='bokeh-1.2.0.min.css') }}" type="text/css" rel="stylesheet" >
 	<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
@@ -25,13 +25,14 @@
 			<div class="panel-body" id="lineplot">
                 <form id="form-lineplt">
                     <label for="pltcode_selector">Plate Code: </label>
-                    <select id="pltcode_selector">
+                    <select id="pltcode_selector" onchange="showBtn('hidden-btn',this)">
                         <option value="{{pltcodes[0]}}" selected> {{pltcodes[0]}} </option>
                         {% for eachpltcode in pltcodes[1:] %}
                         <option value="{{eachpltcode}}">{{eachpltcode}}</option>
                         {% endfor %}
                     </select>
-                    <input class="submit-button" type="submit" id=submit-btn-df">
+                    <input class="submit-button" type="submit" id="submit-btn-df">
+		    <button class="submit-button" id="hidden-btn">Show Heatmap</button>
                 </form>
                 <div id="innerPanelLnPlt">
                     <!- #line plots go here ->
