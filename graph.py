@@ -30,7 +30,6 @@ dsn_tns = cx_Oracle.makedsn(host,port,service_name=servname)
 conn = cx_Oracle.connect(user,passwrd,dsn_tns)
 cr = conn.cursor()
 
-lstOfwavelengths = list(range(220,810,10))
 manager = multiprocessing.Manager()
 lstOfPlots = manager.list()
 emptyWells= {f"{chr(65+i)}01" if i < 16 else f"{chr(65+i%16)}02":0 for i in range(32)} #empty first two columns on plate
@@ -38,11 +37,16 @@ emptyWells= {f"{chr(65+i)}01" if i < 16 else f"{chr(65+i%16)}02":0 for i in rang
 wellIds=[]
 cnt=0
 for i in range(1,17):
-    for j in range(1,25):
+    for j in range(1,25): 
         if j < 10:
             j = '0'+ str(j)
         wellIds.append((cnt,f'{chr(64+i)}{j}'))
         cnt+=1
+
+def getLstOfwavelengths(tableName,pltcodeWithSuffix):
+    pltcode = pltcodeWithSuffix[:8]
+    suffix = pltcodeWithSuffix[8:11]
+    return [r[0] for r in cr.execute(f"SELECT DISTINCT WAVELENGTH FROM {tableName} WHERE PLATE_CODE = {pltcode} AND PLATE_SUFFIX = {suffix} ORDER BY WAVELENGTH")]
 
 def chunks(l, n):
     '''takes a list and integer n as input and returns
@@ -65,7 +69,7 @@ def getAllWellVals(cr,tableName,pltcodeWithSuffix,wellID):
             '{wellID}' and PLATE_CODE = {pltcode} AND PLATE_SUFFIX = {suffix}''')]
 
 
-def build_graph_multiproc(chunk,pltcodeWithSuffix):
+def build_graph_multiproc(chunk,lstOfwavelengths,pltcodeWithSuffix):
     global lstOfPlots
     with cx_Oracle.connect(user,passwrd,dsn_tns) as conn:
         cr = conn.cursor()
@@ -74,6 +78,9 @@ def build_graph_multiproc(chunk,pltcodeWithSuffix):
             fig = Figure(figsize=(0.6,0.6))
             axis = fig.add_subplot(1,1,1)
             absVals = getAllWellVals(cr,tableName_abs,pltcodeWithSuffix,wid)
+            if int(pltcodeWithSuffix[2:4]) < 18: 
+                lstOfwavelengths = getLstOfwavelengths('WELL_ABSORBANCE',pltcodeWithSuffix)
+
             axis.plot(lstOfwavelengths,absVals)
             axis.set_title(f'{wid}',fontsize=9)
             axis.title.set_position([.5, .6])
@@ -97,9 +104,13 @@ def build_heatmap(pltcodeWithSuffix,wavelength):
         datadict = getWavelengthData(cr,tableName_abs, pltcodeWithSuffix,int(wavelength))
         max_val = np.array([v for v in datadict.values()]).max()
         min_val = abs(np.array([v for v in datadict.values()])).min()
-        if int(pltcodeWithSuffix[2:4]) < 18: 
-            merge_dict = {**datadict,**emptyWells}
-            datadict = dict(sorted(merge_dict.items()))
+        if int(pltcodeWithSuffix[2:4]) < 19: 
+            for k in wellIds:
+                if k[1] in datadict.keys():
+                    pass
+                else:
+                    datadict[k[1]] = 0
+            datadict = dict(sorted(datadict.items()))
         data_array = np.array(list(datadict.values())).reshape(16,24).T
         colourBlue = [ '#E3E6E8', '#E0E7EB', '#DEE8ED', '#DBE9F0', '#D9EAF2', '#D6EBF5', '#D4EBF7', '#D1ECFA', '#CFEDFC', '#CCEEFF', '#A8D8F0', '#A3DAF5', '#9EDBFA', '#99DDFF', '#7DC4E8', '#75C7F0', '#6EC9F7', '#66CCFF' ]
         nphist = np.linspace(min_val,max_val,num=len(colourBlue))
@@ -107,7 +118,7 @@ def build_heatmap(pltcodeWithSuffix,wavelength):
         colours=[]
         for i in range(data_array.shape[0]):
             for j in range(data_array.shape[1]):
-                if data_array[i,j] < 0:
+                if data_array[i,j] < 0 or data_array[i,j] == 0:
                     colours.append('#5C6970')
                 else:
                     colours.append(colourBlue[lamDiff(data_array[i,j])])

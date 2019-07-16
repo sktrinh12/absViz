@@ -4,17 +4,12 @@
 	<title>384 QC</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css"> -->
-  <link href="{{ url_for('static', filename='bootstrap-3.4.1-dist/css/bootstrap.min.css') }}" rel="stylesheet" media="all">
+	<link href="{{ url_for('static', filename='bootstrap-3.4.1-dist/css/bootstrap.min.css') }}" rel="stylesheet" media="all">
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheet.css') }}">
-  <script src=" {{ url_for('static', filename='jquery.min.js') }}"></script>
-  <script src=" {{ url_for('static', filename='bootstrap-3.4.1-dist/js/bootstrap.min.js') }}"></script>
-  <script src=" {{ url_for('static', filename='bokeh-1.2.0.min.js') }}"></script>
-  <link href=" {{ url_for('static', filename='bokeh-1.2.0.min.css') }}" type="text/css" rel="stylesheet" >
-	<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
-	<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script> -->	
-	<!-- <link href="https://cdn.pydata.org/bokeh/release/bokeh-1.2.0.min.css" rel="stylesheet" type="text/css"> -->
-	<!-- <script src="https://cdn.pydata.org/bokeh/release/bokeh-1.2.0.min.js"></script> -->
+	<script src=" {{ url_for('static', filename='jquery.min.js') }}"></script>
+	<script src=" {{ url_for('static', filename='bootstrap-3.4.1-dist/js/bootstrap.min.js') }}"></script>
+	<script src=" {{ url_for('static', filename='bokeh-1.2.0.min.js') }}"></script>
+	<link href=" {{ url_for('static', filename='bokeh-1.2.0.min.css') }}" type="text/css" rel="stylesheet" >
 	<script type="text/javascript" src="{{ url_for('static', filename='jscripts.js') }}" async></script>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}" />
 </head>
@@ -25,7 +20,7 @@
 			<div class="panel-body" id="lineplot">
                 <form id="form-lineplt">
                     <label for="pltcode_selector">Plate Code: </label>
-                    <select id="pltcode_selector" onchange="showBtn('hidden-btn',this)">
+                    <select id="pltcode_selector" name="pltcode_selector" onchange="showBtn('hidden-btn',this)">
                         <option value="{{pltcodes[0]}}" selected> {{pltcodes[0]}} </option>
                         {% for eachpltcode in pltcodes[1:] %}
                         <option value="{{eachpltcode}}">{{eachpltcode}}</option>
