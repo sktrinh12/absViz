@@ -145,9 +145,14 @@ def corrAbs(db,pltcodeWithSuffix1,pltcodeWithSuffix2,wavelength):
         cr = conn.cursor()
         crude = list(getWavelengthData(cr,tableName_abs,pltcodeWithSuffix1,wavelength).values())
         fx = list(getWavelengthData(cr,tableName_abs,pltcodeWithSuffix2,wavelength).values())
-        darray_crude = np.array(crude).reshape(16,24)
-        darray_fx = np.array(fx).reshape(16,24)
-        darray_t = np.flip(np.flip(darray_crude.T,axis=1),axis=0).reshape(16,24) #flip the 100 plate
+        if int(pltcodeWithSuffix1[2:4]) < 19 and int(pltcodeWithSuffix2[2:4]) < 19: 
+            darray_crude = np.array(crude).reshape(16,12)
+            darray_fx = np.array(fx).reshape(16,12)
+            darray_t = np.flip(np.flip(darray_crude.T,axis=1),axis=0).reshape(16,12) 
+        else:
+            darray_crude = np.array(crude).reshape(16,24)
+            darray_fx = np.array(fx).reshape(16,24)
+            darray_t = np.flip(np.flip(darray_crude.T,axis=1),axis=0).reshape(16,24) #flip the 100 plate
         ar_crude = np.delete(np.delete(np.delete(darray_crude, np.s_[1::2], 1),[0],1),np.s_[1::2],0) #filter elements so that only obtain the first value of each quadrant
         ar_crude_t = np.delete(np.delete(np.delete(darray_t, np.s_[1::2], 1),[0],1),np.s_[1::2],0) #filter elements as above but for tranposed plate
         ar_fx7 = np.delete(np.delete(np.delete(darray_fx, np.s_[::2], 1),[0],1),np.s_[0::2],0) #filter elemnts for 7th fx, the 4th value of each quadrant (backwards 'C')
