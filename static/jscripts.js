@@ -11,22 +11,6 @@ function showBtn(divId,element)
 	}
 };
 
-function getInitPc(data) 
-{
-	$.ajax({
-		url:"{{ url_for('init') }}",
-		contentType: "application/json",
-		data:JSON.stringify(data),
-		type: 'POST',
-		dataType:"json",
-		success: function(response) {
-			console.log(response);
-		},
-		error:function(err) {
-			console.log(err);
-		}
-	});
-}
 
 //MAIN JAVASCRIPT 
 $(document).ready(function() { 
@@ -59,7 +43,6 @@ $(document).ready(function() {
 			lnpanel.hide();
 			e.preventDefault();
 			hmpanel.html("<h4><font color='#2152bd'><strong>LOADING...</strong></font></h4>").fadeIn(200);
-
 		$.when(
 			$.ajax({ //FIRST AJAX CALL
 			url:"/updateMain/",
@@ -69,8 +52,10 @@ $(document).ready(function() {
 			$('#wavelength_selector').empty();
 				$.each(reply.wavelength,function(value) {
 					$('#wavelength_selector').append($("<option></option>").attr("value",value).text(reply.wavelength[value]));
+			console.log('first ajax call');
 				});
 			$('#wavelength_selector').find(":selected").text(reply.wavelength[0]);
+			panelHeadLnPlt.html(`<h3>Plate Code: ${$("#pltcode_selector").find(":selected").text()} </h3>`);
 			$('#innerPanel').empty()
 			}
 			}),
@@ -81,7 +66,6 @@ $(document).ready(function() {
 			data:{wavelength:$("#wavelength_selector").find(":selected").text(),selected_pltcode:$("#pltcode_selector").find(":selected").text()},
 			dataType:'json',
 			success: function(reply) {
-			        panelHeadLnPlt.html(`<h3>Plate Code: ${reply.pltcode} </h3>`);
 				panelHeadHm.html(`<h3>Heatmap of ${reply.pltcode} at ${reply.selected_wavelength}nm</h3>`);
 				$('#innerPanel').html(reply.htmlHeatmap);
 			}

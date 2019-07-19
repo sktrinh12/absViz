@@ -22,7 +22,7 @@ def main():
 
 @app.route('/updateMain/')
 def updateMain():
-    selected_pltcode = request.args.get('selected_pltcode')
+    selected_pltcode = request.args.get('selected_pltcode').strip()
     if int(selected_pltcode[2:4]) < 19:
         wavelength = getLstOfwavelengths(tableName_abs,selected_pltcode)
     else:
@@ -32,7 +32,7 @@ def updateMain():
 @app.route('/updateDf/')
 def updateDf():
      global lstOfPlots
-     selected_pltcode = request.args.get('selected_pltcode')
+     selected_pltcode = request.args.get('selected_pltcode').strip()
      selected_wavelength = request.args.get('wavelength').strip()
      func_partial = partial(build_graph_multiproc,lstOfwavelengths=lstOfwavelengths,pltcodeWithSuffix=selected_pltcode)
      pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
