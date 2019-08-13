@@ -19,7 +19,6 @@ def main():
      selected_pltcode = pltcodes[0]
      return render_template('graphs.html', wvls=getLstOfwavelengths(tableName_abs,selected_pltcode),pltcodes=pltcodes,unqPltCodes=unqPltCodes)
 
-
 @app.route('/updateMain/')
 def updateMain():
     selected_pltcode = request.args.get('selected_pltcode').strip()
@@ -28,6 +27,20 @@ def updateMain():
     else:
         wavelength = lstOfwavelengths
     return jsonify(wavelength=wavelength,selected_pltcode=selected_pltcode)
+
+@app.route('/getWavelengths/')
+def getWavelengths():
+    selected_pltcode = request.args.get('selected_pltcode')[:8].strip()
+    print(selected_pltcode)
+    return jsonify(wvls=getLstOfwavelengths(tableName_abs,selected_pltcode))
+
+@app.route('/getPltcodes/')
+def getPltcodes():
+    return jsonify(pltcodeList=pltcodes)
+
+@app.route('/getUnqPltcodes/')
+def getUnqPltcodes():
+    return jsonify(unqPltcodeLst=unqPltCodes)
 
 @app.route('/updateDf/')
 def updateDf():

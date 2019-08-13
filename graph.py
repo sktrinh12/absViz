@@ -45,8 +45,9 @@ for i in range(1,17):
 
 def getLstOfwavelengths(tableName,pltcodeWithSuffix):
     pltcode = pltcodeWithSuffix[:8]
-    suffix = pltcodeWithSuffix[8:11]
-    return [r[0] for r in cr.execute(f"SELECT DISTINCT WAVELENGTH FROM {tableName} WHERE PLATE_CODE = {pltcode} AND PLATE_SUFFIX = {suffix} ORDER BY WAVELENGTH")]
+    #suffix = pltcodeWithSuffix[8:11]
+    #return [r[0] for r in cr.execute(f"SELECT DISTINCT WAVELENGTH FROM {tableName} WHERE PLATE_CODE = {pltcode} AND PLATE_SUFFIX = {suffix} ORDER BY WAVELENGTH")]
+    return [r[0] for r in cr.execute(f"SELECT DISTINCT WAVELENGTH FROM {tableName} WHERE PLATE_CODE = {pltcode} ORDER BY WAVELENGTH")]
 
 def chunks(l, n):
     '''takes a list and integer n as input and returns
