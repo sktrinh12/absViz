@@ -11,6 +11,8 @@ function showBtn(divId,element)
 	}
 };
 
+var data_result;
+
 
 function autocomplete(inp, arr) {
   /*the autocomplete function takes two arguments,
@@ -315,32 +317,31 @@ $(document).ready(function() {
 			});
 
 	//UPDATE CORRELATION TABLE
-        formCorr.on("submit", function(e)
-            {
-                e.preventDefault();
-		$.when(
-			$.ajax({ //FIRST AJAX CALL
-			url:"/getWavelengths/",
-			data:{selected_pltcode:$("#ac_pltcodes2").val()},
-			dataType:'json',
-			success: function(reply) {
-			$('#wavelength_selector2').empty();
-				$.each(reply.wvls,function(value) {
-					$('#wavelength_selector2').append($("<option></option>").attr("value",value).text(reply.wvls[value]));
+          formCorr.on("submit", function(e)
+              {
+                  e.preventDefault();
+  			$.ajax({  //FIRST AJAX CALL
+  			url:"/getWavelengths/",
+  			data:{selected_pltcode:$("#ac_pltcodes2").val()},
+  			dataType:'json',
+  			success: function(reply) {
+				var currentSelectedWvl = ($('#wavelength_selector2').find(":selected").text());
+				$('#wavelength_selector2').empty();
+					$.each(reply.wvls,function(value) {
+						$('#wavelength_selector2').append($("<option></option>").attr("value",value).text(reply.wvls[value]));
 				});
-			$('#wavelength_selector2').find(":selected").text(reply.wvls[0])
-			}
-		}),
-			$.ajax({ //SECOND AJAX CALL
-			url:"/updateCorrel/",
-			data:{selected_pltcode2:$("#ac_pltcodes2").val(),wavelength2:$("#wavelength_selector2").find(":selected").text()},
-			dataType:'json',
-			success: function(reply){
-				corrpanel.html(reply.htmlCorr).fadeIn(500);
-			}
-		})
-		).then(function() {
-			console.log(selected_pltcode2);
-		});
-	});
+				var wvl_nbr = parseInt(currentSelectedWvl);
+				var wvl_match = reply.wvls.indexOf(wvl_nbr);
+				$("#wavelength_selector2").val(wvl_match);
+  			}
+  		}),
+   			$.ajax({   //SECOND AJAX CALL
+   			url:"/updateCorrel/",
+   			data:{selected_pltcode2:$("#ac_pltcodes2").val(),wavelength2:$("#wavelength_selector2").find(":selected").text()},
+   			dataType:'json',
+   			success: function(reply){
+   				corrpanel.html(reply.htmlCorr).fadeIn(500);
+   			}
+   		});
+ 	});
 });
