@@ -6,4 +6,4 @@ The app does not require the internet and was built to be run on a VLAN without 
 
 
 #### Demo of the app
-![absvizdemo](https://gifs.com/gif/abs-viz-app-wV5Y8R) 
+![absvizdemo](/Users/trinhsk/Documents/GitRepos/absViz_offline/384QC_offline/static/demo.gif) 
